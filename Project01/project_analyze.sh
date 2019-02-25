@@ -5,6 +5,8 @@ cd ..
 echo "Which functions which you like to execute: 
 	1) File Type Count
 	2) TODO log
+	3) Delete Temporary Files
+	4) Merge Log
 Enter a Number followed by the Enter key."
 
 read funcNum
@@ -31,6 +33,19 @@ grep --exclude=todo.log -rn "#TODO" | grep -v '"#TODO"' > todo.log
 
 }
 
+deleteTmp () {
+
+#lists untracked files, finds files with the .tmp extension and removes it
+git ls-files . --exclude-standard --others | find . -name "*.tmp" | xargs rm
+
+}
+
+mergeLog () {
+
+git log --oneline | grep -i "merge" | cut -d ' ' -f1 > merge.log
+
+}
+
 if [ $funcNum = "1" ]; then
 	echo "Executing File Type Count"
 	fileTypeCount
@@ -38,6 +53,14 @@ if [ $funcNum = "1" ]; then
 elif [ $funcNum = "2" ]; then
 	echo "Executing TODO log"
 	todoLog
+
+elif [ $funcNum = "3" ]; then
+	echo "Deleting Temporary Files"
+	deleteTmp
+
+elif [ $funcNum = "4" ]; then
+	echo "Creating Merge Log"
+	mergeLog
 
 fi
 

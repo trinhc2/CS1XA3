@@ -3,6 +3,8 @@
 I selected the following features:
 * File Type Count
 * TODO Log
+* Delete Temporary Files
+* Merge Log
 
 ### Instructions
 
