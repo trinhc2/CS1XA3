@@ -19,6 +19,7 @@ def register_user(request):
     if uname != '':
         user = User.objects.create_user(username=uname,
                                         password=passw)
+        user.save()
 
         login(request,user)
         return HttpResponse('LoggedIn')
@@ -45,7 +46,7 @@ def login_user(request):
 def logout_user(request):
     logout(request)
     return HttpResponse("Logout succesful")
-    
+
 def user_info(request):
     """serves content that is only available to a logged in user"""
 
