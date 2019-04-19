@@ -16,9 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-root = "e/trinhc2/"
+root = 'e/trinhc2/'
 
 urlpatterns = [
-    path( root + 'admin/', admin.site.urls),
-    path( root + 'usersystem/', include('usersystem.urls'))
+    path(root + 'usersystem/', include('usersystem.urls')) ,
 ]

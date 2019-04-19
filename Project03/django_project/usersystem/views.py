@@ -6,7 +6,6 @@ import json
 
 from .models import UserInfo
 
-
 def register_user(request):
     """recieves a json request { 'username' : 'val0', 'password' : 'val1' } and saves it
        it to the database using the django User Model
@@ -19,8 +18,10 @@ def register_user(request):
     if uname != '':
         user = User.objects.create_user(username=uname,
                                         password=passw)
-        user.save()
 
+        userinfo = UserInfo.objects.create(user=user, info="")
+        user.save()
+        userinfo.save()
         login(request,user)
         return HttpResponse('LoggedIn')
 
@@ -28,7 +29,7 @@ def register_user(request):
         return HttpResponse('LoggedOut')
 
 
-def login_user(request):
+def signin_user(request):
     """recieves a json request { 'username' : 'val0' : 'password' : 'val1' } and
        authenticates and loggs in the user upon success """
 

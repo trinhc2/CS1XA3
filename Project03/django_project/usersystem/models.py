@@ -14,6 +14,6 @@ class UserInfo(models.Model):
                                 on_delete=models.CASCADE,
                                 primary_key=True)
 
-    info = models.CharField(max_length=30)
+    info = models.IntegerField()
 
     objects = UserInfoManager()
