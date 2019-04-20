@@ -16,9 +16,9 @@ import String
 rainSpeed = -9
 cupSpeed = 4
 
---rootUrl = "http://localhost:8000/e/trinhc2/"
+rootUrl = "http://localhost:8000/e/trinhc2/"
 
-rootUrl = "https://mac1xa3.ca/e/trinhc2/"
+--rootUrl = "https://mac1xa3.ca/e/trinhc2/"
 
 type Msg = Tick Float GetKeyState
          | MakeRequest Browser.UrlRequest
@@ -33,6 +33,10 @@ type Msg = Tick Float GetKeyState
          | GotLoginResponse (Result Http.Error String)
          | RegisterButton
          | GotRegisterResponse (Result Http.Error String)
+         | SubmitScore
+         | GotSubmitResponse (Result Http.Error String)
+         | GetScore
+         | GotGetResponse (Result Http.Error Int)
 
 type alias Model = { health : Float
                    , score : Int
@@ -46,6 +50,7 @@ type alias Model = { health : Float
                    , username : String
                    , password : String
                    , error : String
+                   , highscore : Int
                    }
 
 type State = Start | Active | Finish
@@ -63,7 +68,7 @@ generateRandomX =
 init : () -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
   let
-    model = { health = 3, score = 0, x = 0, y = 0, rainY = 200, rainX = 0, gameState = Start, text = "Click to begin, A and D to move, J to boost", gameScreen = Login, username = "", password = "", error = ""}
+    model = { health = 3, score = 0, x = 0, y = 0, rainY = 200, rainX = 0, gameState = Start, text = "Click to begin, A and D to move, J to boost", gameScreen = Login, username = "", password = "", error = "", highscore=0}
   in ( model , Cmd.none ) -- add init model
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -84,7 +89,7 @@ update msg model = case model.gameState of
                                         then ({ model | rainY = 250
                                                       , score = model.score + 1}, generateRandomX)
                                     else
-                                      if model.health == 0 then ({ model | gameState = Finish, text = "Game over, click to restart"}, Cmd.none) else
+                                      if model.health == 0 then ({ model | gameState = Finish, text = "Game over, click to restart", highscore = if model.score > model.highscore then model.score else model.highscore}, Cmd.none) else
                                         ({model | x = if model.x <= -210 then model.x + 1 else if model.x >= 210 then model.x - 1 else model.x + cupSpeed*x*boostx
                                                 , rainY = model.rainY + rainSpeed
                                         }, Cmd.none)
@@ -101,6 +106,10 @@ update msg model = case model.gameState of
                            GotLoginResponse _ -> ( model , Cmd.none)
                            RegisterButton -> ( model , Cmd.none)
                            GotRegisterResponse _ -> ( model , Cmd.none)
+                           SubmitScore -> ( model , Cmd.none)
+                           GotSubmitResponse _ -> ( model , Cmd.none)
+                           GetScore -> ( model , Cmd.none)
+                           GotGetResponse _ -> ( model , Cmd.none)
 
                       Finish ->
                           case msg of
@@ -117,6 +126,13 @@ update msg model = case model.gameState of
                             GotLoginResponse _ -> ( model , Cmd.none)
                             RegisterButton -> ( model , Cmd.none)
                             GotRegisterResponse _ -> ( model , Cmd.none)
+                            SubmitScore -> ( model , submitPost model)
+                            GotSubmitResponse result -> case result of
+                                      Ok _ -> ( model , Cmd.none)
+                                      Err error ->
+                                          ( handleError model error, Cmd.none )
+                            GetScore -> ( model , Cmd.none)
+                            GotGetResponse _ -> ( model , Cmd.none)
 
                       Start ->
                           case msg of
@@ -144,25 +160,37 @@ update msg model = case model.gameState of
                               GotRegisterResponse result ->
                                   case result of
                                       Ok _ ->
-                                          ( model, Cmd.none )
+                                          ( {model | error = "refresh to login"}, Cmd.none )
 
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+                              SubmitScore -> ( model , Cmd.none)
+                              GotSubmitResponse _ -> ( model , Cmd.none)
+                              GetScore -> ( model , getPost model)
+                              GotGetResponse result -> case result of
+                                      Ok info -> ( {model | highscore = info}, Cmd.none)
+                                      Err error ->
+                                          ( handleError model error, Cmd.none )
+
 view : Model -> { title : String, body : Collage Msg }
 view model =
   let
     title = "Fill up my cup"
     body = collage 500 375 screenChange
     screenChange = case model.gameScreen of
-                        Game -> gameAssets
+                        Game -> case model.gameState of
+                                  Active -> gameAssets
+                                  Start -> gameAssets ++ [scoreGet |> notifyTap GetScore]
+                                  Finish -> gameAssets ++ [scoreSubmit |> notifyTap SubmitScore]
                         Login -> loginAssets
                         Register -> registerAssets
 
 --Game graphic elements
     gameAssets = [ ui, rainDrop, ground, catcher |> move (model.x, model.y), gametext]
-    ui = group [ background, currentHealth, currentScore]
+    ui = group [ background, currentHealth, currentScore, currentHighscore]
     catcher = group [ cup, handle, innerhandle]
-
+    scoreSubmit = group [scoreSubmitButton, scoreSubmitText]
+    scoreGet = group [scoreGetButton, scoreGetText]
     background = rectangle 500 375
                   |> filled black
                   |> notifyTap StartGame
@@ -177,6 +205,11 @@ view model =
                       |> sansserif
                       |> filled white
                       |> move (-245, 160)
+
+    currentHighscore = GraphicSVG.text ("Highscore: " ++ String.fromInt model.highscore)
+                      |> sansserif
+                      |> filled white
+                      |> move (-245, 145)
 
     ground = rectangle 500 20
              |> filled green
@@ -205,15 +238,33 @@ view model =
                 |> sansserif
                 |> filled white
 
+    scoreGetButton = rectangle 60 15
+                      |> filled white
+                      |> move(-135,150)
+
+    scoreGetText = GraphicSVG.text ("Get score")
+                        |> sansserif
+                        |> filled black
+                        |> move (-161,146)
+
+    scoreSubmitButton = rectangle 75 20
+                    |> filled white
+                    |> move (0,-30)
+
+    scoreSubmitText = GraphicSVG.text ("Submit score")
+                        |> sansserif
+                        |> filled black
+                        |> move (-35,-33)
+
 --Login graphic elements
-    loginAssets = [loginBg] ++ gameTitle ++ userInput ++ passInput ++ loginButton ++ signupButton
+    loginAssets = [loginBg] ++ gameTitle ++ requestError ++ userInput ++ passInput ++ loginButton ++ signupButton
     userInput = [html 250 300 (div [] [input [placeholder "Username", onInput NewUserName, value model.username, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,20)]
     passInput = [html 250 300 (div [] [input [placeholder "Password", onInput NewPassword, value model.password, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,0)]
     loginBg = rectangle 250 300
                 |> filled blue
-    loginButton = [html 250 300 (div [] [button [Html.Events.onClick LoginButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "50px"] [Html.text "Login"], Html.text model.error]) |> move (-90,-22)]
+    loginButton = [html 250 300 (div [] [button [Html.Events.onClick LoginButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "50px"] [Html.text "Login"]]) |> move (-90,-22)]
     gameTitle = [html 250 300 (div [] [Html.text "Fill Up My Cup"])|> move(-55,50) ]
-
+    requestError = [html 250 300 (div [] [Html.text model.error]) |> move(-120,-100)]
     signupButton = [html 250 300 (div [] [button [Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px", onClick RedirectRegister] [Html.text "Create an account"]]) |> move (-40,-22)]
 
 --Register graphic elements
@@ -233,6 +284,13 @@ userEncoder model =
           )
         ]
 
+scoreEncoder : Model -> JEncode.Value
+scoreEncoder model =
+    JEncode.object [ ( "info", JEncode.int model.highscore), ("username", JEncode.string model.username) ]
+
+scoreDecoder : JDecode.Decoder Int
+scoreDecoder = JDecode.field "info" JDecode.int
+
 loginPost : Model -> Cmd Msg
 loginPost model =
     Http.post
@@ -247,6 +305,22 @@ registerPost model =
         { url = rootUrl ++ "usersystem/registeruser/"
         , body = Http.jsonBody <| userEncoder model
         , expect = Http.expectString GotRegisterResponse
+        }
+
+submitPost : Model -> Cmd Msg
+submitPost model =
+  Http.post
+        { url = rootUrl ++ "usersystem/savescore/"
+        , body = Http.jsonBody <| scoreEncoder model
+        , expect = Http.expectString GotSubmitResponse
+        }
+
+getPost : Model -> Cmd Msg
+getPost model =
+  Http.post
+        { url = rootUrl ++ "usersystem/getscore/"
+        , body = Http.jsonBody <| userEncoder model
+        , expect = Http.expectJson GotGetResponse scoreDecoder
         }
 
 handleError : Model -> Http.Error -> Model
