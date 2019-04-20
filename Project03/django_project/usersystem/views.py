@@ -20,8 +20,7 @@ def register_user(request):
                                         password=passw)
 
         userinfo = UserInfo.objects.create(user=user, info="")
-        user.save()
-        userinfo.save()
+
         login(request,user)
         return HttpResponse('LoggedIn')
 
@@ -32,7 +31,6 @@ def register_user(request):
 def signin_user(request):
     """recieves a json request { 'username' : 'val0' : 'password' : 'val1' } and
        authenticates and loggs in the user upon success """
-
     json_req = json.loads(request.body)
     uname = json_req.get('username','')
     passw = json_req.get('password','')
@@ -46,8 +44,8 @@ def signin_user(request):
 
 def logout_user(request):
     logout(request)
-    return HttpResponse("Logout succesful")
-
+    return HttpResponse("LoggedOut")
+    
 def user_info(request):
     """serves content that is only available to a logged in user"""
 
