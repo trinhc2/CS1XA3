@@ -8,5 +8,7 @@ urlpatterns = [
     path('userinfo/', views.user_info , name = 'usersystem-user_info') ,
     path('logoutuser/', views.logout_user, name = 'usersystem-logout_user'),
     path('savescore/', views.submit_user, name = 'usersystem-submit_user'),
-    path('getscore/', views.getscore_user, name = 'usersystem-get_user')
+    path('getscore/', views.getscore_user, name = 'usersystem-get_user'),
+    path('getleaderboard/', views.getleaderboard, name = 'usersystem-getleaderboard')    
+
 ]

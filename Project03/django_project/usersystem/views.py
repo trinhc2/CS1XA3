@@ -20,7 +20,7 @@ def register_user(request):
                                         password=passw)
 
         userinfo = UserInfo.objects.create(user=user, info=0)
-        userinfo.save()
+
         login(request,user)
         return HttpResponse('LoggedIn')
 
@@ -62,6 +62,19 @@ def getscore_user(request):
     getUser = UserInfo.objects.get(user__username=uname)
 
     return JsonResponse({"info" : getUser.info})
+
+def getleaderboard(request):
+
+    #gets all objects of the Toy database unsorted
+
+    # gets all objects of the Toy database sorted by price
+    sortedscore= UserInfo.objects.order_by('info').reverse()
+
+    context= {'sortedscore': sortedscore}
+
+    return render(request, 'leaderboard.html', context)
+
+
 
 def user_info(request):
     """serves content that is only available to a logged in user"""

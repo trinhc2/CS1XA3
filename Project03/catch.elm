@@ -1,5 +1,5 @@
 import Browser
-import Browser.Navigation exposing (Key(..))
+import Browser.Navigation exposing (Key(..), load)
 import GraphicSVG exposing (..)
 import GraphicSVG.App exposing (..)
 import Url
@@ -37,6 +37,8 @@ type Msg = Tick Float GetKeyState
          | GotSubmitResponse (Result Http.Error String)
          | GetScore
          | GotGetResponse (Result Http.Error Int)
+         | LeaderboardButton
+         | GotLeaderResponse (Result Http.Error ())
 
 type alias Model = { health : Float
                    , score : Int
@@ -110,6 +112,8 @@ update msg model = case model.gameState of
                            GotSubmitResponse _ -> ( model , Cmd.none)
                            GetScore -> ( model , Cmd.none)
                            GotGetResponse _ -> ( model , Cmd.none)
+                           LeaderboardButton -> ( model , Cmd.none)
+                           GotLeaderResponse _ -> ( model , Cmd.none)
 
                       Finish ->
                           case msg of
@@ -133,6 +137,8 @@ update msg model = case model.gameState of
                                           ( handleError model error, Cmd.none )
                             GetScore -> ( model , Cmd.none)
                             GotGetResponse _ -> ( model , Cmd.none)
+                            LeaderboardButton -> ( model , Cmd.none)
+                            GotLeaderResponse _ -> ( model , Cmd.none)
 
                       Start ->
                           case msg of
@@ -169,6 +175,11 @@ update msg model = case model.gameState of
                               GetScore -> ( model , getPost model)
                               GotGetResponse result -> case result of
                                       Ok info -> ( {model | highscore = info}, Cmd.none)
+                                      Err error ->
+                                          ( handleError model error, Cmd.none )
+                              LeaderboardButton -> ( model , leaderPost)
+                              GotLeaderResponse result -> case result of
+                                      Ok _ -> (model, load (rootUrl ++ "usersystem/getleaderboard/"))
                                       Err error ->
                                           ( handleError model error, Cmd.none )
 
@@ -257,7 +268,7 @@ view model =
                         |> move (-35,-33)
 
 --Login graphic elements
-    loginAssets = [loginBg] ++ gameTitle ++ requestError ++ userInput ++ passInput ++ loginButton ++ signupButton
+    loginAssets = [loginBg] ++ gameTitle ++ requestError ++ userInput ++ passInput ++ loginButton ++ signupButton ++leaderboardButton
     userInput = [html 250 300 (div [] [input [placeholder "Username", onInput NewUserName, value model.username, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,20)]
     passInput = [html 250 300 (div [] [input [placeholder "Password", onInput NewPassword, value model.password, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,0)]
     loginBg = rectangle 250 300
@@ -267,6 +278,7 @@ view model =
     requestError = [html 250 300 (div [] [Html.text model.error]) |> move(-120,-100)]
     signupButton = [html 250 300 (div [] [button [Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px", onClick RedirectRegister] [Html.text "Create an account"]]) |> move (-40,-22)]
 
+    leaderboardButton = [html 250 300 (div [] [button [Html.Events.onClick LeaderboardButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px"] [Html.text "View Leaderboard"]]) |> move (0,-130)]
 --Register graphic elements
     registerAssets = [loginBg] ++ gameTitle ++ userInput ++ passInput ++ registerButton
     registerButton = [html 250 300 (div [] [button [onClick RegisterButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "70px"] [Html.text "Register"]]) |> move (-40,-22)]
@@ -321,6 +333,14 @@ getPost model =
         { url = rootUrl ++ "usersystem/getscore/"
         , body = Http.jsonBody <| userEncoder model
         , expect = Http.expectJson GotGetResponse scoreDecoder
+        }
+
+leaderPost : Cmd Msg
+leaderPost =
+  Http.post
+        { url = rootUrl ++ "usersystem/getleaderboard/"
+        , body = Http.emptyBody
+        , expect = Http.expectWhatever GotLeaderResponse
         }
 
 handleError : Model -> Http.Error -> Model

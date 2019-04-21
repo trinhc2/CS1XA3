@@ -1,0 +1,25 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Leaderboard</title>
+</head>
+<body>
+
+
+<h1>Leaderboard </h1>
+<table border="1">
+<tr>
+<td>User</td>
+<td>Score</td>
+</tr>
+{% for score in sortedscore %}
+<tr>
+<td>{{ score.user }} </td>
+<td> {{ score.info }} </td>
+</tr>
+
+{% endfor %}
+</table>
+
+</body>
+</html>
