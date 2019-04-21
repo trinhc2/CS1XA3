@@ -42,11 +42,9 @@ def signin_user(request):
     else:
         return HttpResponse('LoginFailed')
 
-def logout_user(request):
-    logout(request)
-    return HttpResponse("LoggedOut")
-
 def submit_user(request):
+    """receives a json request { 'username' : 'val0', 'info' 'val1' } and
+       updates the user's info (their highscore) """
     json_req = json.loads(request.body)
     uinfo = json_req.get('info','')
     uname = json_req.get('username','')
@@ -57,6 +55,8 @@ def submit_user(request):
     return HttpResponse("Success")
 
 def getscore_user(request):
+    """receives a json request { 'username' : 'val0'} and
+       retrieves a user's info (their highscore) """
     json_req = json.loads(request.body)
     uname = json_req.get('username','')
     getUser = UserInfo.objects.get(user__username=uname)
@@ -64,23 +64,12 @@ def getscore_user(request):
     return JsonResponse({"info" : getUser.info})
 
 def getleaderboard(request):
+    """receives an empty json request and creates a leaderboard from the
+       leaderboard.html template"""
 
-    #gets all objects of the Toy database unsorted
-
-    # gets all objects of the Toy database sorted by price
+    # gets all objects of the UserInfo database sorted by info(score)
     sortedscore= UserInfo.objects.order_by('info').reverse()
 
     context= {'sortedscore': sortedscore}
 
     return render(request, 'leaderboard.html', context)
-
-
-
-def user_info(request):
-    """serves content that is only available to a logged in user"""
-
-    if not request.user.is_authenticated:
-        return HttpResponse("LoggedOut")
-    else:
-        # do something only a logged in user can do
-        return HttpResponse("Hello " + request.user.first_name)

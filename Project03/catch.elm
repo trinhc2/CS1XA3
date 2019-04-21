@@ -59,46 +59,61 @@ type State = Start | Active | Finish
 
 type Screen = Login | Register | Game
 
-randomX : Random.Generator Float
-randomX =
-  Random.float -200 200
-
-generateRandomX : Cmd Msg
-generateRandomX =
-  Random.generate CreateNewX randomX
-
 init : () -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
   let
-    model = { health = 3, score = 0, x = 0, y = 0, rainY = 200, rainX = 0, gameState = Start, text = "Click to begin, A and D to move, J to boost", gameScreen = Login, username = "", password = "", error = "", highscore=0}
+    model = { health = 3
+            , score = 0
+            , x = 0
+            , y = 0
+            , rainY = 200
+            , rainX = 0
+            , gameState = Start
+            , text = "Click to begin, A and D to move, J to boost"
+            , gameScreen = Login
+            , username = ""
+            , password = ""
+            , error = ""
+            , highscore=0}
+
   in ( model , Cmd.none ) -- add init model
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = case model.gameState of
+                   --Cases are when the game is active, the game is in start, the game is in finish
                       Active ->
                           case msg of
                            Tick time (keyToState, _, (x,y)) ->
                              let
+                              --pressing J returns a multiplier of 3 to the speed of the cup
                               boostx = case keyToState (Key "j") of
                                 Down -> 3
                                 _ -> 1
                              in
+                                --Checking if the rain hits the ground
                                 if model.rainY < -250
                                     then ({ model | rainY = 250
                                                   , health = model.health - 1}, generateRandomX)
-                                else
+                                else --Checking if the rain falls into the cup
                                     if (model.rainX - model.x < 40 && model.rainX - model.x > -40)  && ((model.rainY - 7.5) - (model.y - 130) < 10 && (model.rainY - 7.5) - (model.y - 130) > -10)
                                         then ({ model | rainY = 250
                                                       , score = model.score + 1}, generateRandomX)
-                                    else
-                                      if model.health == 0 then ({ model | gameState = Finish, text = "Game over, click to restart", highscore = if model.score > model.highscore then model.score else model.highscore}, Cmd.none) else
+                                    else --Checking if the user's health is  zero
+                                      if model.health == 0 then
+                                        ({ model | gameState = Finish
+                                                 , text = "Game over, click to restart"
+                                                 , highscore = if model.score > model.highscore then model.score else model.highscore
+                                        }, Cmd.none)
+                                      else --If none of the above, run the game mechanics
                                         ({model | x = if model.x <= -210 then model.x + 1 else if model.x >= 210 then model.x - 1 else model.x + cupSpeed*x*boostx
                                                 , rainY = model.rainY + rainSpeed
                                         }, Cmd.none)
-
+                           --Unique updates: CreateNewX
                            MakeRequest req    -> ( model , Cmd.none )
                            UrlChange url      -> ( model , Cmd.none )
                            StartGame -> ( model , Cmd.none)
+
+                           --Replaces the x position of the rain
                            CreateNewX newrainx -> ({model | rainX = newrainx}, Cmd.none)
                            RestartGame -> ( model , Cmd.none)
                            NewUserName name -> ( model , Cmd.none )
@@ -117,12 +132,22 @@ update msg model = case model.gameState of
 
                       Finish ->
                           case msg of
+                            --Unique updates: RestartGame, SubmitScore, GotSubmitResponse
                             StartGame -> ( model , Cmd.none)
                             MakeRequest _    -> ( model , Cmd.none )
                             UrlChange _      -> ( model , Cmd.none )
                             Tick _ _ -> ( model , Cmd.none )
                             CreateNewX _ -> ( model , Cmd.none )
-                            RestartGame -> ( {model | health = 3, score = 0, x = 0, y = 0, rainY = 200, rainX = 0, gameState = Start, text = "Click to begin, A and D to move, J to boost"} , Cmd.none)
+                            --Resets game to initial state
+                            RestartGame -> ( {model | health = 3
+                                                    , score = 0
+                                                    , x = 0
+                                                    , y = 0
+                                                    , rainY = 200
+                                                    , rainX = 0
+                                                    , gameState = Start
+                                                    , text = "Click to begin, A and D to move, J to boost"
+                                            } , Cmd.none)
                             NewUserName name -> ( model , Cmd.none )
                             NewPassword pass -> ( model , Cmd.none)
                             RedirectRegister -> ( model , Cmd.none)
@@ -130,11 +155,14 @@ update msg model = case model.gameState of
                             GotLoginResponse _ -> ( model , Cmd.none)
                             RegisterButton -> ( model , Cmd.none)
                             GotRegisterResponse _ -> ( model , Cmd.none)
+
+                            --Submitting score post
                             SubmitScore -> ( model , submitPost model)
                             GotSubmitResponse result -> case result of
                                       Ok _ -> ( model , Cmd.none)
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+
                             GetScore -> ( model , Cmd.none)
                             GotGetResponse _ -> ( model , Cmd.none)
                             LeaderboardButton -> ( model , Cmd.none)
@@ -142,15 +170,22 @@ update msg model = case model.gameState of
 
                       Start ->
                           case msg of
+                              --Unique updates: StartGame, NewUserName, NewPassword, RedirectRegister, GotLoginResponse, RegisterButton, GotRegisterResponse, GetScore, GotGetResponse, LeaderboardButton, GotLeaderResponse
                               StartGame -> ( {model | gameState = Active, text = ""} , Cmd.none)
+
                               MakeRequest _    -> ( model , Cmd.none )
                               UrlChange _      -> ( model , Cmd.none )
                               Tick _ _ -> ( model , Cmd.none )
                               CreateNewX _ -> ( model , Cmd.none )
                               RestartGame -> ( model , Cmd.none)
+
                               NewUserName name -> ( { model | username = name }, Cmd.none )
                               NewPassword pass -> ( { model | password = pass }, Cmd.none )
+
+                              --Redirecting user to register page
                               RedirectRegister -> ( { model | gameScreen = Register, username = "", password = ""}, Cmd.none)
+
+                              --Logging in a user post
                               LoginButton -> ( model, loginPost model )
                               GotLoginResponse result ->
                                   case result of
@@ -162,22 +197,30 @@ update msg model = case model.gameState of
 
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+
+                              --Registering a user post
                               RegisterButton -> ( model , registerPost model)
                               GotRegisterResponse result ->
                                   case result of
                                       Ok _ ->
-                                          ( {model | error = "refresh to login"}, Cmd.none )
+                                          ( {model | error = "Sucess, refresh to login"}, Cmd.none )
 
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+
                               SubmitScore -> ( model , Cmd.none)
                               GotSubmitResponse _ -> ( model , Cmd.none)
+
+                              --Retrieving highscore json requests
                               GetScore -> ( model , getPost model)
                               GotGetResponse result -> case result of
                                       Ok info -> ( {model | highscore = info}, Cmd.none)
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+
+                              --Going to the leaderboard json requests
                               LeaderboardButton -> ( model , leaderPost)
+                              --Routes the user to the leaderboard
                               GotLeaderResponse result -> case result of
                                       Ok _ -> (model, load (rootUrl ++ "usersystem/getleaderboard/"))
                                       Err error ->
@@ -188,6 +231,7 @@ view model =
   let
     title = "Fill up my cup"
     body = collage 500 375 screenChange
+    --Changes what is displayed based on the screen displayed and the state of the game.
     screenChange = case model.gameScreen of
                         Game -> case model.gameState of
                                   Active -> gameAssets
@@ -202,6 +246,7 @@ view model =
     catcher = group [ cup, handle, innerhandle]
     scoreSubmit = group [scoreSubmitButton, scoreSubmitText]
     scoreGet = group [scoreGetButton, scoreGetText]
+
     background = rectangle 500 375
                   |> filled black
                   |> notifyTap StartGame
@@ -279,12 +324,25 @@ view model =
     signupButton = [html 250 300 (div [] [button [Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px", onClick RedirectRegister] [Html.text "Create an account"]]) |> move (-40,-22)]
 
     leaderboardButton = [html 250 300 (div [] [button [Html.Events.onClick LeaderboardButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px"] [Html.text "View Leaderboard"]]) |> move (0,-130)]
+
 --Register graphic elements
-    registerAssets = [loginBg] ++ gameTitle ++ userInput ++ passInput ++ registerButton
+    registerAssets = [loginBg] ++ requestError ++ gameTitle ++ userInput ++ passInput ++ registerButton
     registerButton = [html 250 300 (div [] [button [onClick RegisterButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "70px"] [Html.text "Register"]]) |> move (-40,-22)]
+
   in { title = title , body = body }
 
+--Random X-coordinate generator
+randomX : Random.Generator Float
+randomX =
+  Random.float -200 200
+
+generateRandomX : Cmd Msg
+generateRandomX =
+  Random.generate CreateNewX randomX
+
 --Json Request Functions
+
+--Encodes a user's login information
 userEncoder : Model -> JEncode.Value
 userEncoder model =
     JEncode.object
@@ -296,13 +354,16 @@ userEncoder model =
           )
         ]
 
+--Encodes a user's score, used for saving score to database
 scoreEncoder : Model -> JEncode.Value
 scoreEncoder model =
     JEncode.object [ ( "info", JEncode.int model.highscore), ("username", JEncode.string model.username) ]
 
+--decodes a user's score from the database, used for retrieving a user's highscore
 scoreDecoder : JDecode.Decoder Int
 scoreDecoder = JDecode.field "info" JDecode.int
 
+--checking if the user is in the database
 loginPost : Model -> Cmd Msg
 loginPost model =
     Http.post
@@ -311,6 +372,7 @@ loginPost model =
         , expect = Http.expectString GotLoginResponse
         }
 
+--registering a user to the database
 registerPost : Model -> Cmd Msg
 registerPost model =
     Http.post
@@ -319,6 +381,7 @@ registerPost model =
         , expect = Http.expectString GotRegisterResponse
         }
 
+--saving score to the database
 submitPost : Model -> Cmd Msg
 submitPost model =
   Http.post
@@ -327,6 +390,7 @@ submitPost model =
         , expect = Http.expectString GotSubmitResponse
         }
 
+--Retrieving score from database post
 getPost : Model -> Cmd Msg
 getPost model =
   Http.post
@@ -335,6 +399,7 @@ getPost model =
         , expect = Http.expectJson GotGetResponse scoreDecoder
         }
 
+--Leaderboard post
 leaderPost : Cmd Msg
 leaderPost =
   Http.post
@@ -343,6 +408,7 @@ leaderPost =
         , expect = Http.expectWhatever GotLeaderResponse
         }
 
+--Error handler
 handleError : Model -> Http.Error -> Model
 handleError model error =
     case error of
