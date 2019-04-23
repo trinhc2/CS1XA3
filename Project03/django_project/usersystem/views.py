@@ -15,7 +15,7 @@ def register_user(request):
     uname = json_req.get('username','')
     passw = json_req.get('password','')
 
-    if uname != '':
+    if uname != '' and passw != '':
         user = User.objects.create_user(username=uname,
                                         password=passw)
 
