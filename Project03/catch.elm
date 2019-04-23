@@ -16,9 +16,9 @@ import String
 rainSpeed = -9
 cupSpeed = 4
 
-rootUrl = "http://localhost:8000/e/trinhc2/"
+--rootUrl = "http://localhost:8000/e/trinhc2/"
 
---rootUrl = "https://mac1xa3.ca/e/trinhc2/"
+rootUrl = "https://mac1xa3.ca/e/trinhc2/"
 
 type Msg = Tick Float GetKeyState
          | MakeRequest Browser.UrlRequest
@@ -55,9 +55,13 @@ type alias Model = { health : Float
                    , highscore : Int
                    }
 
-type State = Start | Active | Finish
+type State = Start
+           | Active
+           | Finish
 
-type Screen = Login | Register | Game
+type Screen = Login
+            | Register
+            | Game
 
 init : () -> Url.Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
