@@ -1,4 +1,4 @@
-##Fill Up My Cup
+## Fill Up My Cup
 
 ### Instructions
 1. SSH into the Mac1xa3 server using your choice of command line (I Use Windows Powershell)
@@ -19,6 +19,6 @@
 
 * Score submission: After the game ends the user is able to submit their score to the database by clicking on "Submit Score". There are also local high scores in case the user does not want to submit their score to the server.
 
-* Score retrieval: Before the game starts the user is able to retrieve their high score from the database by clicking "Get Score" located beside the high score in the top left corner. A newly registered user will have default 0 as their high score in the database
+* Score retrieval: Before the game starts the user is able to retrieve their high score from the database by clicking "Get Score" located beside the high score in the top left corner. A newly registered user will have default 0 as their high score in the database.
 
-* Leaderboard: On the login screen users are able to view a leaderboard which displays the current high scores by all users. The leaderboard is sorted from highest to lowest
+* Leaderboard: On the login screen users are able to view a leaderboard which displays the current high scores by all users. The leaderboard is sorted from highest to lowest.
