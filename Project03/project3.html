@@ -9676,6 +9676,15 @@ var author$project$Main$loginPost = function (model) {
 			url: author$project$Main$rootUrl + 'usersystem/signinuser/'
 		});
 };
+var author$project$Main$GotLogoutResponse = function (a) {
+	return {$: 'GotLogoutResponse', a: a};
+};
+var author$project$Main$logoutPost = elm$http$Http$post(
+	{
+		body: elm$http$Http$emptyBody,
+		expect: elm$http$Http$expectString(author$project$Main$GotLogoutResponse),
+		url: author$project$Main$rootUrl + 'usersystem/logoutuser/'
+	});
 var author$project$Main$rainSpeed = -9;
 var author$project$Main$GotRegisterResponse = function (a) {
 	return {$: 'GotRegisterResponse', a: a};
@@ -9805,6 +9814,10 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 					case 'LeaderboardButton':
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					case 'GotLeaderResponse':
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					case 'LogoutButton':
+						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 					default:
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 				}
@@ -9862,8 +9875,25 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
 					case 'LeaderboardButton':
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
-					default:
+					case 'GotLeaderResponse':
 						return _Utils_Tuple2(model, elm$core$Platform$Cmd$none);
+					case 'LogoutButton':
+						return _Utils_Tuple2(model, author$project$Main$logoutPost);
+					default:
+						var result = msg.a;
+						if (result.$ === 'Ok') {
+							var info = result.a;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{gameScreen: author$project$Main$Login}),
+								elm$core$Platform$Cmd$none);
+						} else {
+							var error = result.a;
+							return _Utils_Tuple2(
+								A2(author$project$Main$handleError, model, error),
+								elm$core$Platform$Cmd$none);
+						}
 				}
 			default:
 				switch (msg.$) {
@@ -9901,7 +9931,7 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{gameScreen: author$project$Main$Register, password: '', username: ''}),
+								{gameScreen: author$project$Main$Register, highscore: 0, password: '', username: ''}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginButton':
 						return _Utils_Tuple2(
@@ -9936,11 +9966,19 @@ var author$project$Main$update = F2(
 					case 'GotRegisterResponse':
 						var result = msg.a;
 						if (result.$ === 'Ok') {
-							return _Utils_Tuple2(
-								_Utils_update(
-									model,
-									{error: 'Sucess, refresh to login'}),
-								elm$core$Platform$Cmd$none);
+							if (result.a === 'LoggedIn') {
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{error: 'Success, refresh to login'}),
+									elm$core$Platform$Cmd$none);
+							} else {
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{error: 'Registration Failed'}),
+									elm$core$Platform$Cmd$none);
+							}
 						} else {
 							var error = result.a;
 							return _Utils_Tuple2(
@@ -9972,12 +10010,29 @@ var author$project$Main$update = F2(
 						}
 					case 'LeaderboardButton':
 						return _Utils_Tuple2(model, author$project$Main$leaderPost);
-					default:
+					case 'GotLeaderResponse':
 						var result = msg.a;
 						if (result.$ === 'Ok') {
 							return _Utils_Tuple2(
 								model,
 								elm$browser$Browser$Navigation$load(author$project$Main$rootUrl + 'usersystem/getleaderboard/'));
+						} else {
+							var error = result.a;
+							return _Utils_Tuple2(
+								A2(author$project$Main$handleError, model, error),
+								elm$core$Platform$Cmd$none);
+						}
+					case 'LogoutButton':
+						return _Utils_Tuple2(model, author$project$Main$logoutPost);
+					default:
+						var result = msg.a;
+						if (result.$ === 'Ok') {
+							var info = result.a;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{gameScreen: author$project$Main$Login, highscore: 0, password: '', username: ''}),
+								elm$core$Platform$Cmd$none);
 						} else {
 							var error = result.a;
 							return _Utils_Tuple2(
@@ -10129,6 +10184,7 @@ var MacCASOutreach$graphicsvg$GraphicSVG$text = function (str) {
 var author$project$Main$GetScore = {$: 'GetScore'};
 var author$project$Main$LeaderboardButton = {$: 'LeaderboardButton'};
 var author$project$Main$LoginButton = {$: 'LoginButton'};
+var author$project$Main$LogoutButton = {$: 'LogoutButton'};
 var author$project$Main$NewPassword = function (a) {
 	return {$: 'NewPassword', a: a};
 };
@@ -10140,9 +10196,35 @@ var author$project$Main$RegisterButton = {$: 'RegisterButton'};
 var author$project$Main$RestartGame = {$: 'RestartGame'};
 var author$project$Main$StartGame = {$: 'StartGame'};
 var author$project$Main$SubmitScore = {$: 'SubmitScore'};
+var elm$virtual_dom$VirtualDom$node = function (tag) {
+	return _VirtualDom_node(
+		_VirtualDom_noScript(tag));
+};
+var elm$html$Html$node = elm$virtual_dom$VirtualDom$node;
+var elm$virtual_dom$VirtualDom$attribute = F2(
+	function (key, value) {
+		return A2(
+			_VirtualDom_attribute,
+			_VirtualDom_noOnOrFormAction(key),
+			_VirtualDom_noJavaScriptOrHtmlUri(value));
+	});
+var elm$html$Html$Attributes$attribute = elm$virtual_dom$VirtualDom$attribute;
+var author$project$Main$stylesheet = function () {
+	var tag = 'link';
+	var children = _List_Nil;
+	var attrs = _List_fromArray(
+		[
+			A2(elm$html$Html$Attributes$attribute, 'Rel', 'stylesheet'),
+			A2(elm$html$Html$Attributes$attribute, 'property', 'stylesheet'),
+			A2(elm$html$Html$Attributes$attribute, 'href', 'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css')
+		]);
+	return A3(elm$html$Html$node, tag, attrs, children);
+}();
 var elm$html$Html$button = _VirtualDom_node('button');
 var elm$html$Html$div = _VirtualDom_node('div');
+var elm$html$Html$h3 = _VirtualDom_node('h3');
 var elm$html$Html$input = _VirtualDom_node('input');
+var elm$html$Html$p = _VirtualDom_node('p');
 var elm$html$Html$text = elm$virtual_dom$VirtualDom$text;
 var elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -10151,9 +10233,11 @@ var elm$html$Html$Attributes$stringProperty = F2(
 			key,
 			elm$json$Json$Encode$string(string));
 	});
+var elm$html$Html$Attributes$class = elm$html$Html$Attributes$stringProperty('className');
 var elm$html$Html$Attributes$placeholder = elm$html$Html$Attributes$stringProperty('placeholder');
 var elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var elm$html$Html$Attributes$style = elm$virtual_dom$VirtualDom$style;
+var elm$html$Html$Attributes$type_ = elm$html$Html$Attributes$stringProperty('type');
 var elm$html$Html$Attributes$value = elm$html$Html$Attributes$stringProperty('value');
 var elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
@@ -10184,6 +10268,24 @@ var elm$html$Html$Events$onInput = function (tagger) {
 			A2(elm$json$Json$Decode$map, tagger, elm$html$Html$Events$targetValue)));
 };
 var author$project$Main$view = function (model) {
+	var userLogoutText = A2(
+		MacCASOutreach$graphicsvg$GraphicSVG$move,
+		_Utils_Tuple2(208, 176),
+		A2(
+			MacCASOutreach$graphicsvg$GraphicSVG$filled,
+			MacCASOutreach$graphicsvg$GraphicSVG$black,
+			MacCASOutreach$graphicsvg$GraphicSVG$sansserif(
+				MacCASOutreach$graphicsvg$GraphicSVG$text('Logout'))));
+	var userLogoutButton = A2(
+		MacCASOutreach$graphicsvg$GraphicSVG$move,
+		_Utils_Tuple2(227, 180),
+		A2(
+			MacCASOutreach$graphicsvg$GraphicSVG$filled,
+			MacCASOutreach$graphicsvg$GraphicSVG$white,
+			A2(MacCASOutreach$graphicsvg$GraphicSVG$rectangle, 45, 15)));
+	var userLogout = MacCASOutreach$graphicsvg$GraphicSVG$group(
+		_List_fromArray(
+			[userLogoutButton, userLogoutText]));
 	var userInput = _List_fromArray(
 		[
 			A2(
@@ -10198,6 +10300,7 @@ var author$project$Main$view = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
+							author$project$Main$stylesheet,
 							A2(
 							elm$html$Html$input,
 							_List_fromArray(
@@ -10205,7 +10308,7 @@ var author$project$Main$view = function (model) {
 									elm$html$Html$Attributes$placeholder('Username'),
 									elm$html$Html$Events$onInput(author$project$Main$NewUserName),
 									elm$html$Html$Attributes$value(model.username),
-									A2(elm$html$Html$Attributes$style, 'height', '10px'),
+									A2(elm$html$Html$Attributes$style, 'height', '19px'),
 									A2(elm$html$Html$Attributes$style, 'width', '171px')
 								]),
 							_List_Nil)
@@ -10216,7 +10319,7 @@ var author$project$Main$view = function (model) {
 		[
 			A2(
 			MacCASOutreach$graphicsvg$GraphicSVG$move,
-			_Utils_Tuple2(-40, -22),
+			_Utils_Tuple2(-39, -22),
 			A3(
 				MacCASOutreach$graphicsvg$GraphicSVG$html,
 				250,
@@ -10230,13 +10333,25 @@ var author$project$Main$view = function (model) {
 							elm$html$Html$button,
 							_List_fromArray(
 								[
+									elm$html$Html$Attributes$class('btn btn-primary btn-sm'),
 									A2(elm$html$Html$Attributes$style, 'height', '20px'),
-									A2(elm$html$Html$Attributes$style, 'width', '125px'),
+									A2(elm$html$Html$Attributes$style, 'width', '120px'),
 									elm$html$Html$Events$onClick(author$project$Main$RedirectRegister)
 								]),
 							_List_fromArray(
 								[
-									elm$html$Html$text('Create an account')
+									A2(
+									elm$html$Html$p,
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'font-size', '12px'),
+											A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+											A2(elm$html$Html$Attributes$style, 'bottom', '5px')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Create an account')
+										]))
 								]))
 						]))))
 		]);
@@ -10311,13 +10426,25 @@ var author$project$Main$view = function (model) {
 							elm$html$Html$button,
 							_List_fromArray(
 								[
+									elm$html$Html$Attributes$class('btn btn-primary btn-sm'),
 									elm$html$Html$Events$onClick(author$project$Main$RegisterButton),
 									A2(elm$html$Html$Attributes$style, 'height', '20px'),
 									A2(elm$html$Html$Attributes$style, 'width', '70px')
 								]),
 							_List_fromArray(
 								[
-									elm$html$Html$text('Register')
+									A2(
+									elm$html$Html$p,
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'font-size', '12px'),
+											A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+											A2(elm$html$Html$Attributes$style, 'bottom', '5px')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Register')
+										]))
 								]))
 						]))))
 		]);
@@ -10346,10 +10473,11 @@ var author$project$Main$view = function (model) {
 							elm$html$Html$input,
 							_List_fromArray(
 								[
+									elm$html$Html$Attributes$type_('password'),
 									elm$html$Html$Attributes$placeholder('Password'),
 									elm$html$Html$Events$onInput(author$project$Main$NewPassword),
 									elm$html$Html$Attributes$value(model.password),
-									A2(elm$html$Html$Attributes$style, 'height', '10px'),
+									A2(elm$html$Html$Attributes$style, 'height', '19px'),
 									A2(elm$html$Html$Attributes$style, 'width', '171px')
 								]),
 							_List_Nil)
@@ -10373,13 +10501,25 @@ var author$project$Main$view = function (model) {
 							elm$html$Html$button,
 							_List_fromArray(
 								[
+									elm$html$Html$Attributes$class('btn btn-primary btn-sm'),
 									elm$html$Html$Events$onClick(author$project$Main$LoginButton),
 									A2(elm$html$Html$Attributes$style, 'height', '20px'),
 									A2(elm$html$Html$Attributes$style, 'width', '50px')
 								]),
 							_List_fromArray(
 								[
-									elm$html$Html$text('Login')
+									A2(
+									elm$html$Html$p,
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'font-size', '12px'),
+											A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+											A2(elm$html$Html$Attributes$style, 'bottom', '5px')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('Login')
+										]))
 								]))
 						]))))
 		]);
@@ -10391,7 +10531,7 @@ var author$project$Main$view = function (model) {
 		[
 			A2(
 			MacCASOutreach$graphicsvg$GraphicSVG$move,
-			_Utils_Tuple2(0, -130),
+			_Utils_Tuple2(-125, -125),
 			A3(
 				MacCASOutreach$graphicsvg$GraphicSVG$html,
 				250,
@@ -10405,13 +10545,24 @@ var author$project$Main$view = function (model) {
 							elm$html$Html$button,
 							_List_fromArray(
 								[
+									elm$html$Html$Attributes$class('btn btn-primary btn-sm'),
 									elm$html$Html$Events$onClick(author$project$Main$LeaderboardButton),
 									A2(elm$html$Html$Attributes$style, 'height', '20px'),
-									A2(elm$html$Html$Attributes$style, 'width', '125px')
+									A2(elm$html$Html$Attributes$style, 'width', '250px')
 								]),
 							_List_fromArray(
 								[
-									elm$html$Html$text('View Leaderboard')
+									A2(
+									elm$html$Html$p,
+									_List_fromArray(
+										[
+											A2(elm$html$Html$Attributes$style, 'position', 'relative'),
+											A2(elm$html$Html$Attributes$style, 'bottom', '5px')
+										]),
+									_List_fromArray(
+										[
+											elm$html$Html$text('View Leaderboard')
+										]))
 								]))
 						]))))
 		]);
@@ -10470,7 +10621,7 @@ var author$project$Main$view = function (model) {
 		[
 			A2(
 			MacCASOutreach$graphicsvg$GraphicSVG$move,
-			_Utils_Tuple2(-55, 50),
+			_Utils_Tuple2(-95, 130),
 			A3(
 				MacCASOutreach$graphicsvg$GraphicSVG$html,
 				250,
@@ -10480,7 +10631,13 @@ var author$project$Main$view = function (model) {
 					_List_Nil,
 					_List_fromArray(
 						[
-							elm$html$Html$text('Fill Up My Cup')
+							A2(
+							elm$html$Html$h3,
+							_List_Nil,
+							_List_fromArray(
+								[
+									elm$html$Html$text('Fill Up My Cup')
+								]))
 						]))))
 		]);
 	var loginAssets = _Utils_ap(
@@ -10581,18 +10738,31 @@ var author$project$Main$view = function (model) {
 							gameAssets,
 							_List_fromArray(
 								[
-									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$GetScore, scoreGet)
+									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$GetScore, scoreGet),
+									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$LogoutButton, userLogout)
 								]));
 					default:
 						return _Utils_ap(
 							gameAssets,
 							_List_fromArray(
 								[
-									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$SubmitScore, scoreSubmit)
+									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$SubmitScore, scoreSubmit),
+									A2(MacCASOutreach$graphicsvg$GraphicSVG$notifyTap, author$project$Main$LogoutButton, userLogout)
 								]));
 				}
 			case 'Login':
-				return loginAssets;
+				return _Utils_ap(
+					loginAssets,
+					_List_fromArray(
+						[
+							A2(
+							MacCASOutreach$graphicsvg$GraphicSVG$scale,
+							0.9,
+							A2(
+								MacCASOutreach$graphicsvg$GraphicSVG$move,
+								_Utils_Tuple2(0, 210),
+								catcher))
+						]));
 			default:
 				return registerAssets;
 		}

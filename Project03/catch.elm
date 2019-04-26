@@ -16,6 +16,23 @@ import String
 rainSpeed = -9
 cupSpeed = 4
 
+--Loading external CSS
+stylesheet =
+    let
+        tag =
+            "link"
+
+        attrs =
+            [ attribute "Rel" "stylesheet"
+            , attribute "property" "stylesheet"
+            , attribute "href" "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+            ]
+
+        children =
+            []
+    in
+        node tag attrs children
+
 --rootUrl = "http://localhost:8000/e/trinhc2/"
 
 rootUrl = "https://mac1xa3.ca/e/trinhc2/"
@@ -39,6 +56,8 @@ type Msg = Tick Float GetKeyState
          | GotGetResponse (Result Http.Error Int)
          | LeaderboardButton
          | GotLeaderResponse (Result Http.Error ())
+         | LogoutButton
+         | GotLogoutResponse (Result Http.Error String)
 
 type alias Model = { health : Float
                    , score : Int
@@ -133,10 +152,12 @@ update msg model = case model.gameState of
                            GotGetResponse _ -> ( model , Cmd.none)
                            LeaderboardButton -> ( model , Cmd.none)
                            GotLeaderResponse _ -> ( model , Cmd.none)
+                           LogoutButton -> ( model , Cmd.none)
+                           GotLogoutResponse _ -> ( model , Cmd.none)
 
                       Finish ->
                           case msg of
-                            --Unique updates: RestartGame, SubmitScore, GotSubmitResponse
+                            --Unique updates: RestartGame, SubmitScore, GotSubmitResponse, LogoutButton, GotLogoutResponse
                             StartGame -> ( model , Cmd.none)
                             MakeRequest _    -> ( model , Cmd.none )
                             UrlChange _      -> ( model , Cmd.none )
@@ -171,10 +192,15 @@ update msg model = case model.gameState of
                             GotGetResponse _ -> ( model , Cmd.none)
                             LeaderboardButton -> ( model , Cmd.none)
                             GotLeaderResponse _ -> ( model , Cmd.none)
-
+                            LogoutButton -> ( model , logoutPost )
+                            GotLogoutResponse result -> case result of
+                                      Ok info -> ( {model | gameScreen = Login}, Cmd.none)
+                                      Err error ->
+                                          ( handleError model error, Cmd.none )
                       Start ->
                           case msg of
-                              --Unique updates: StartGame, NewUserName, NewPassword, RedirectRegister, GotLoginResponse, RegisterButton, GotRegisterResponse, GetScore, GotGetResponse, LeaderboardButton, GotLeaderResponse
+                              --Unique updates: StartGame, NewUserName, NewPassword, RedirectRegister, GotLoginResponse, RegisterButton, GotRegisterResponse
+                              --GetScore, GotGetResponse, LeaderboardButton, GotLeaderResponse, LogoutButton, GotLogoutResponse
                               StartGame -> ( {model | gameState = Active, text = ""} , Cmd.none)
 
                               MakeRequest _    -> ( model , Cmd.none )
@@ -187,7 +213,7 @@ update msg model = case model.gameState of
                               NewPassword pass -> ( { model | password = pass }, Cmd.none )
 
                               --Redirecting user to register page
-                              RedirectRegister -> ( { model | gameScreen = Register, username = "", password = ""}, Cmd.none)
+                              RedirectRegister -> ( { model | gameScreen = Register, username = "", password = "", highscore = 0}, Cmd.none)
 
                               --Logging in a user post
                               LoginButton -> ( model, loginPost model )
@@ -206,8 +232,11 @@ update msg model = case model.gameState of
                               RegisterButton -> ( model , registerPost model)
                               GotRegisterResponse result ->
                                   case result of
+                                      Ok "LoggedIn" ->
+                                          ( {model | error = "Success, refresh to login"}, Cmd.none )
+
                                       Ok _ ->
-                                          ( {model | error = "Sucess, refresh to login"}, Cmd.none )
+                                          ( { model | error = "Registration Failed"}, Cmd.none )
 
                                       Err error ->
                                           ( handleError model error, Cmd.none )
@@ -229,6 +258,11 @@ update msg model = case model.gameState of
                                       Ok _ -> (model, load (rootUrl ++ "usersystem/getleaderboard/"))
                                       Err error ->
                                           ( handleError model error, Cmd.none )
+                              LogoutButton -> ( model , logoutPost )
+                              GotLogoutResponse result -> case result of
+                                      Ok info -> ( {model | gameScreen = Login, username = "", password = "", highscore = 0}, Cmd.none)
+                                      Err error ->
+                                          ( handleError model error, Cmd.none )
 
 view : Model -> { title : String, body : Collage Msg }
 view model =
@@ -239,9 +273,9 @@ view model =
     screenChange = case model.gameScreen of
                         Game -> case model.gameState of
                                   Active -> gameAssets
-                                  Start -> gameAssets ++ [scoreGet |> notifyTap GetScore]
-                                  Finish -> gameAssets ++ [scoreSubmit |> notifyTap SubmitScore]
-                        Login -> loginAssets
+                                  Start -> gameAssets ++ [scoreGet |> notifyTap GetScore, userLogout |> notifyTap LogoutButton]
+                                  Finish -> gameAssets ++ [scoreSubmit |> notifyTap SubmitScore, userLogout |> notifyTap LogoutButton]
+                        Login -> loginAssets ++ [catcher |> move (0,210) |> scale 0.9]
                         Register -> registerAssets
 
 --Game graphic elements
@@ -250,6 +284,7 @@ view model =
     catcher = group [ cup, handle, innerhandle]
     scoreSubmit = group [scoreSubmitButton, scoreSubmitText]
     scoreGet = group [scoreGetButton, scoreGetText]
+    userLogout = group [userLogoutButton, userLogoutText]
 
     background = rectangle 500 375
                   |> filled black
@@ -316,22 +351,31 @@ view model =
                         |> filled black
                         |> move (-35,-33)
 
+    userLogoutButton = rectangle 45 15
+                    |> filled white
+                    |> move (227,180)
+
+    userLogoutText = GraphicSVG.text ("Logout")
+                        |> sansserif
+                        |> filled black
+                        |> move (208,176)
+
 --Login graphic elements
     loginAssets = [loginBg] ++ gameTitle ++ requestError ++ userInput ++ passInput ++ loginButton ++ signupButton ++leaderboardButton
-    userInput = [html 250 300 (div [] [input [placeholder "Username", onInput NewUserName, value model.username, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,20)]
-    passInput = [html 250 300 (div [] [input [placeholder "Password", onInput NewPassword, value model.password, Html.Attributes.style "height" "10px", Html.Attributes.style "width" "171px"] []])|> move (-90,0)]
+    userInput = [html 250 300 (div [] [stylesheet, input [placeholder "Username", onInput NewUserName, value model.username, Html.Attributes.style "height" "19px", Html.Attributes.style "width" "171px"] []])|> move (-90,20)]
+    passInput = [html 250 300 (div [] [input [Html.Attributes.type_ "password", placeholder "Password", onInput NewPassword, value model.password, Html.Attributes.style "height" "19px", Html.Attributes.style "width" "171px"] []])|> move (-90,0)]
     loginBg = rectangle 250 300
                 |> filled blue
-    loginButton = [html 250 300 (div [] [button [Html.Events.onClick LoginButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "50px"] [Html.text "Login"]]) |> move (-90,-22)]
-    gameTitle = [html 250 300 (div [] [Html.text "Fill Up My Cup"])|> move(-55,50) ]
+    loginButton = [html 250 300 (div [] [button [Html.Attributes.class "btn btn-primary btn-sm", Html.Events.onClick LoginButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "50px"] [Html.p [Html.Attributes.style "font-size" "12px", Html.Attributes.style "position" "relative", Html.Attributes.style "bottom" "5px"] [Html.text "Login"]]]) |> move (-90,-22)]
+    gameTitle = [html 250 300 (div [] [Html.h3 [] [Html.text "Fill Up My Cup"]])|> move(-95,130) ]
     requestError = [html 250 300 (div [] [Html.text model.error]) |> move(-120,-100)]
-    signupButton = [html 250 300 (div [] [button [Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px", onClick RedirectRegister] [Html.text "Create an account"]]) |> move (-40,-22)]
+    signupButton = [html 250 300 (div [] [button [Html.Attributes.class "btn btn-primary btn-sm", Html.Attributes.style "height" "20px", Html.Attributes.style "width" "120px", onClick RedirectRegister] [Html.p [Html.Attributes.style "font-size" "12px", Html.Attributes.style "position" "relative", Html.Attributes.style "bottom" "5px"] [Html.text "Create an account"]]]) |> move (-39,-22)]
 
-    leaderboardButton = [html 250 300 (div [] [button [Html.Events.onClick LeaderboardButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "125px"] [Html.text "View Leaderboard"]]) |> move (0,-130)]
+    leaderboardButton = [html 250 300 (div [] [button [Html.Attributes.class "btn btn-primary btn-sm",Html.Events.onClick LeaderboardButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "250px"] [Html.p [Html.Attributes.style "position" "relative", Html.Attributes.style "bottom" "5px"] [Html.text "View Leaderboard"]]]) |> move (-125,-125)]
 
 --Register graphic elements
     registerAssets = [loginBg] ++ requestError ++ gameTitle ++ userInput ++ passInput ++ registerButton
-    registerButton = [html 250 300 (div [] [button [onClick RegisterButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "70px"] [Html.text "Register"]]) |> move (-40,-22)]
+    registerButton = [html 250 300 (div [] [button [Html.Attributes.class "btn btn-primary btn-sm", onClick RegisterButton, Html.Attributes.style "height" "20px", Html.Attributes.style "width" "70px"] [Html.p [Html.Attributes.style "font-size" "12px", Html.Attributes.style "position" "relative", Html.Attributes.style "bottom" "5px"] [Html.text "Register"]]]) |> move (-40,-22)]
 
   in { title = title , body = body }
 
@@ -412,6 +456,13 @@ leaderPost =
         , expect = Http.expectWhatever GotLeaderResponse
         }
 
+logoutPost : Cmd Msg
+logoutPost =
+  Http.post
+        { url = rootUrl ++ "usersystem/logoutuser/"
+        , body = Http.emptyBody
+        , expect = Http.expectString GotLogoutResponse
+        }
 --Error handler
 handleError : Model -> Http.Error -> Model
 handleError model error =

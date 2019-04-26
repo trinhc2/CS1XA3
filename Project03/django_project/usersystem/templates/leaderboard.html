@@ -1,17 +1,19 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<link href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css' rel='stylesheet'>
 <title>Leaderboard</title>
 </head>
-<body>
+<body style="text-align:center">
 
-
-<h1>Leaderboard </h1>
-<table border="1">
-<tr>
-<td>User</td>
-<td>Score</td>
-</tr>
+<h1> Leaderboard </h1>
+<table class ="table table-striped table-sm" max-width="400px">
+  <thead class = "thead-dark">
+    <tr>
+    <th scope="col">User</th>
+    <th scope="col">Score</th>
+    </tr>
+  </thead>
 {% for score in sortedscore %}
 <tr>
 <td>{{ score.user }} </td>

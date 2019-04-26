@@ -15,7 +15,7 @@ def register_user(request):
     uname = json_req.get('username','')
     passw = json_req.get('password','')
 
-    if uname != '' and passw != '':
+    if uname != '' and passw != "":
         user = User.objects.create_user(username=uname,
                                         password=passw)
 
@@ -42,6 +42,10 @@ def signin_user(request):
     else:
         return HttpResponse('LoginFailed')
 
+def logout_user(request):
+    logout(request)
+    return HttpResponse("LoggedOut")
+
 def submit_user(request):
     """receives a json request { 'username' : 'val0', 'info' 'val1' } and
        updates the user's info (their highscore) """
@@ -50,9 +54,11 @@ def submit_user(request):
     uname = json_req.get('username','')
 
     updateUser = UserInfo.objects.get(user__username=uname)
-    updateUser.info = uinfo
-    updateUser.save()
-    return HttpResponse("Success")
+    if uinfo > updateUser.info:
+        updateUser.info = uinfo
+        updateUser.save()
+    else:
+        return HttpResponse("Success")
 
 def getscore_user(request):
     """receives a json request { 'username' : 'val0'} and
