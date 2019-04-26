@@ -194,7 +194,7 @@ update msg model = case model.gameState of
                             GotLeaderResponse _ -> ( model , Cmd.none)
                             LogoutButton -> ( model , logoutPost )
                             GotLogoutResponse result -> case result of
-                                      Ok info -> ( {model | gameScreen = Login}, Cmd.none)
+                                      Ok info -> ( {model | gameScreen = Login, username = "", password = "", highscore = 0}, Cmd.none)
                                       Err error ->
                                           ( handleError model error, Cmd.none )
                       Start ->
@@ -213,7 +213,7 @@ update msg model = case model.gameState of
                               NewPassword pass -> ( { model | password = pass }, Cmd.none )
 
                               --Redirecting user to register page
-                              RedirectRegister -> ( { model | gameScreen = Register, username = "", password = "", highscore = 0}, Cmd.none)
+                              RedirectRegister -> ( { model | gameScreen = Register, username = "", password = ""}, Cmd.none)
 
                               --Logging in a user post
                               LoginButton -> ( model, loginPost model )

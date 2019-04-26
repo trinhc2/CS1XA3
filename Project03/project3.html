@@ -9886,7 +9886,7 @@ var author$project$Main$update = F2(
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
-									{gameScreen: author$project$Main$Login}),
+									{gameScreen: author$project$Main$Login, highscore: 0, password: '', username: ''}),
 								elm$core$Platform$Cmd$none);
 						} else {
 							var error = result.a;
@@ -9931,7 +9931,7 @@ var author$project$Main$update = F2(
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
-								{gameScreen: author$project$Main$Register, highscore: 0, password: '', username: ''}),
+								{gameScreen: author$project$Main$Register, password: '', username: ''}),
 							elm$core$Platform$Cmd$none);
 					case 'LoginButton':
 						return _Utils_Tuple2(
